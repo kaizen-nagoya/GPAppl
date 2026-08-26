@@ -1062,3 +1062,2165 @@ Phase 3
 [1]: https://www.kadokawa.co.jp/product/200877000035/?utm_source=chatgpt.com "「涼宮ハルヒの憂鬱(1)」谷川流 [角川コミックス・エース] - KADOKAWA"
 [2]: https://www.kodansha.co.jp/book/products/0000209650?utm_source=chatgpt.com "『物語ること、生きること』（上橋　菜穂子,瀧　晴巳）｜講談社"
 [3]: https://cocreco.kodansha.co.jp/aoitori/aoitoribooks/0000209650?utm_source=chatgpt.com "物語ること、生きること - 青い鳥文庫"
+
+# Q4 さらに２つの要素を検討しています。一つは、ゲームには、利用者モードと、ゲームのプログラムを改変するプログラマモードに分けて、改良したプログラムを配布できるようにして、利用者が多ければポイントとスキルがたまるようにする。二つ目は、機密保持契約を結んだプロジェクトの間で、少し抽象化したスキルを取り込む機能です。ここでは、セキュリティ、業務での契約を含めて、細かく検討したいです。
+A4 
+
+はい。ここはかなり重要な分岐点だと思います。
+
+これまでの企画に今回の2要素を加えると、単なる「ゲーム付きスキル管理アプリ」ではなく、
+
+> **個人の経験・スキルを蓄積し、OSS的にゲームを改良・共有し、さらに企業間では機密を漏らさずにスキル知識を共有する「Skill & Experience Platform」**
+
+に発展します。
+
+ただし、**「プログラムを自由に改変して配布」**と**「NDA下の企業情報を抽象化して共有」**は、セキュリティ・知財・契約上かなり性質が違います。ここを最初から分離して設計するのが重要です。
+
+---
+
+# 1. まず全体像
+
+私は次の4つの領域に分けます。
+
+```text
+                         Skill Platform
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        │                     │                     │
+        ▼                     ▼                     ▼
+   User Mode             Programmer Mode       Enterprise Mode
+   利用者モード             開発者モード           企業モード
+        │                     │                     │
+        │                Game Program              │
+        │                改変・作成                │
+        │                     │                     │
+        │                     ▼                     │
+        │                Distribution              │
+        │                     │                     │
+        ▼                     ▼                     ▼
+     Game                 Game Fork             Abstract Skill
+        │                     │                     │
+        └──────────────┬──────┴─────────────────────┘
+                       ▼
+                 Experience
+                       │
+                       ▼
+                     Skill
+                       │
+                       ▼
+                    Points
+                       │
+                       ▼
+                Career Profile
+```
+
+ここで重要なのは、
+
+**企業秘密そのものを「Skill」に変換するのではなく、企業秘密から切り離した「抽象化されたSkill Evidence」を作る**
+
+ことです。
+
+---
+
+# 2. 要素①：利用者モードとプログラマモード
+
+これは非常に面白い仕組みです。
+
+## 利用者モード
+
+普通の利用者は、
+
+```text
+Game
+ ↓
+Quest
+ ↓
+Action
+ ↓
+Experience
+ ↓
+Point
+ ↓
+Skill
+```
+
+だけを使います。
+
+例えば、
+
+> 「Pythonでデータを加工する」
+
+というQuestを実行すると、
+
+```text
+Experience
+    ↓
+Python
+Data Processing
+    ↓
++50 XP
+```
+
+となります。
+
+---
+
+# 3. プログラマモード
+
+こちらではゲームそのものを変更できます。
+
+```text
+Programmer Mode
+
+Game Source
+     │
+     ├── Rule
+     ├── Quest
+     ├── UI
+     ├── Scoring
+     ├── Skill Mapping
+     └── Event
+          │
+          ▼
+       Modify
+          │
+          ▼
+       Test
+          │
+          ▼
+      Publish
+          │
+          ▼
+     Game Repository
+```
+
+例えば、
+
+### Version 1
+
+```text
+Python問題を10問解く
+        ↓
+100 Point
+```
+
+を、
+
+### Version 2
+
+```text
+Python問題
+ + GitHubへの実装
+ + Code Review
+        ↓
+300 Point
+```
+
+に改良する。
+
+---
+
+# 4. ここで重要なのが「Fork」です
+
+GitHubのように、
+
+```text
+Original Game
+       │
+       ├──── Fork A
+       │
+       ├──── Fork B
+       │
+       └──── Fork C
+```
+
+とします。
+
+利用者が、
+
+> 「このゲームのほうが面白い」
+
+と思えばFork版を利用できます。
+
+さらに、
+
+```text
+Fork A
+ ↓
+利用者 100人
+ ↓
+1,000 Play
+ ↓
+高評価
+```
+
+なら、その改良者にポイントを与える。
+
+---
+
+# 5. ただし「利用者数＝ポイント」は危険
+
+ここはかなり重要です。
+
+単純に、
+
+```text
+利用者100人
+ ↓
+作者10,000 Point
+```
+
+としてしまうと、
+
+* Bot
+* 複数アカウント
+* 自動実行
+* 不正アクセス
+* ゲームをわざと簡単にする
+* 自分で大量利用者を作る
+
+などでポイントを稼げます。
+
+したがって、
+
+> **利用者数ではなく「信頼できる利用実績」に対してポイントを付与する**
+
+のがよいです。
+
+例えば、
+
+```text
+Game Contribution Score
+
+Unique Active Users
+×
+Completion Rate
+×
+Retention
+×
+Rating
+×
+Difficulty
+×
+Verified Usage
+```
+
+のようにする。
+
+---
+
+# 6. ポイントとスキルを分離する
+
+ここも重要です。
+
+```text
+                  Activity
+                     │
+             ┌───────┴───────┐
+             ▼               ▼
+          Game XP        Evidence
+             │               │
+             ▼               ▼
+          Points          Skill
+```
+
+つまり、
+
+**Point ≠ Skill**
+
+です。
+
+例えば、
+
+> 人気ゲームを作った
+
+なら、
+
+```text
+Game Design Skill +1
+Software Engineering Skill +1
+Community Contribution +1
+```
+
+など。
+
+一方、
+
+> 100万人に使われた
+
+なら、
+
+```text
+Impact Evidence
+```
+
+が増える。
+
+これによって転職時に、
+
+> 「ポイントを12,000持っています」
+
+ではなく、
+
+> 「作成したゲームが2,400人に利用され、改善版を7回公開し、ユーザー評価4.6/5を獲得した」
+
+と証明できます。
+
+**こちらのほうが圧倒的にキャリア価値があります。**
+
+---
+
+# 7. プログラム配布のセキュリティ
+
+ここは通常のSNSより難しくなります。
+
+利用者がプログラムをアップロードできるなら、
+
+```text
+User
+ ↓
+Upload Program
+ ↓
+Sandbox
+ ↓
+Static Analysis
+ ↓
+Dependency Analysis
+ ↓
+Test
+ ↓
+Security Scan
+ ↓
+Review
+ ↓
+Publish
+```
+
+とする必要があります。
+
+特に**サーバー上で任意コードを直接実行させない**ことが最重要です。
+
+IPAもWebアプリケーションについて、OSコマンドインジェクション、パス・トラバーサル、XSS、CSRF、アクセス制御欠落などを主要な脆弱性として挙げています。([情報処理推進機構][1])
+
+したがって、
+
+```text
+                Untrusted Code
+                     │
+                     ▼
+              ┌─────────────┐
+              │ Sandbox     │
+              │             │
+              │ CPU limit   │
+              │ Memory limit│
+              │ Network OFF │
+              │ File limit  │
+              │ Time limit  │
+              └─────────────┘
+                     │
+                     ▼
+                Game Engine
+```
+
+のような境界が必要です。
+
+---
+
+# 8. さらに「Game Engine」と「Game Data」を分離する
+
+私はここをかなり強くおすすめします。
+
+```text
+Game Engine
+    │
+    │ 安全な固定プログラム
+    │
+    ▼
+Game Definition
+    │
+    ├── Quest
+    ├── Rules
+    ├── Points
+    ├── Skill Mapping
+    └── Story
+```
+
+つまり、最初から「任意のPython/JavaScriptを実行するゲーム」にしない。
+
+例えば、
+
+```json
+{
+  "quest": "python_review",
+  "difficulty": 3,
+  "point": 50,
+  "skills": [
+    "python",
+    "code_review"
+  ]
+}
+```
+
+のような**宣言型ゲーム定義**にする方法があります。
+
+これなら安全性がかなり高くなります。
+
+---
+
+# 9. 要素②：NDAプロジェクト間のスキル共有
+
+こちらはさらに面白いです。
+
+ただし、
+
+> **NDAで知った情報を、そのままアプリに入力してはいけない**
+
+という原則を置きたいです。
+
+企業の営業秘密は、日本の不正競争防止法上、少なくとも「有用性」「秘密管理性」「非公知性」の3要件を満たす情報として扱われます。([経済産業省][2])
+
+---
+
+# 10. そこで「秘密情報」と「抽象Skill」を二層にする
+
+例えばA社で、
+
+```text
+秘密情報
+
+顧客Xのシステムでは
+○○という特殊なアルゴリズムを
+△△という構成で使用している。
+```
+
+という情報があったとします。
+
+これは外部に出してはいけない。
+
+そこで社内のSkill抽象化処理を、
+
+```text
+秘密情報
+    │
+    ▼
+Human Review
+    │
+    ▼
+Abstraction
+    │
+    ▼
+Generic Skill
+```
+
+とします。
+
+例えば、
+
+```text
+「顧客Xで○○を使った」
+```
+
+ではなく、
+
+```text
+「分散システムの性能最適化」
+```
+
+というSkillにする。
+
+---
+
+# 11. 抽象化にはレベルを設ける
+
+私は5段階くらいがよいと思います。
+
+| Level | 情報               | 外部共有  |
+| ----- | ---------------- | ----- |
+| L0    | 公開情報             | ◎     |
+| L1    | 一般化されたSkill      | ◎     |
+| L2    | 抽象化されたExperience | ○     |
+| L3    | 企業固有のSkill       | △     |
+| L4    | NDA情報            | ×     |
+| L5    | 営業秘密・個人情報        | **×** |
+
+例えば、
+
+```text
+L5
+「A社の顧客Bのシステムで○○を実施」
+```
+
+↓
+
+```text
+L4
+「大規模顧客システムで○○を実施」
+```
+
+↓
+
+```text
+L3
+「大規模分散システムの性能改善経験」
+```
+
+↓
+
+```text
+L2
+「分散システム性能改善」
+```
+
+↓
+
+```text
+L1
+「Performance Optimization」
+```
+
+という変換です。
+
+---
+
+# 12. ただし「匿名化」だけでは不十分
+
+ここは非常に重要です。
+
+例えば、
+
+```text
+A社
+↓
+自動車会社
+↓
+日本の大手自動車会社
+↓
+某社
+```
+
+と名前を消しても、
+
+```text
+2025年
+特殊な車載通信方式
+特定のECU構成
+特定の性能値
+```
+
+などが残っていれば、組み合わせから企業や案件を推測できる可能性があります。
+
+したがって、
+
+> **匿名化ではなく「目的に必要な最小限の抽象化」**
+
+として設計したほうがよいです。
+
+---
+
+# 13. 企業ごとに「情報境界」を作る
+
+アーキテクチャとしては、
+
+```text
+                 Skill Platform
+                       │
+       ┌───────────────┼───────────────┐
+       │               │               │
+       ▼               ▼               ▼
+     User A          Company A       Company B
+                       │               │
+                  ┌────┴────┐     ┌────┴────┐
+                  │ NDA DB  │     │ NDA DB  │
+                  └────┬────┘     └────┬────┘
+                       │               │
+                       ▼               ▼
+                  Abstractor       Abstractor
+                       │               │
+                       └───────┬───────┘
+                               ▼
+                         Public Skill
+```
+
+とします。
+
+**Company AのNDA DBとCompany BのNDA DBは直接アクセスできない。**
+
+---
+
+# 14. 企業間共有には「Skill Exchange Zone」を置く
+
+```text
+Company A
+    │
+    │ NDA
+    ▼
+Confidential Zone
+    │
+    │ Human approval
+    ▼
+Abstraction Zone
+    │
+    │ Policy check
+    ▼
+Skill Exchange Zone
+    │
+    ├─────────────┐
+    ▼             ▼
+Company B       Public
+```
+
+ここで初めて外部へ出します。
+
+---
+
+# 15. 「誰が抽象化したか」を記録する
+
+これも非常に重要です。
+
+Skillだけ保存するのではなく、
+
+```text
+Abstract Skill
+     │
+     ├── Source Project
+     ├── Owner Company
+     ├── Reviewer
+     ├── Approval Date
+     ├── Abstraction Level
+     ├── NDA Policy
+     ├── Expiration
+     └── Distribution Scope
+```
+
+を持たせます。
+
+つまり**Skillそのものに来歴（Provenance）を付ける**。
+
+---
+
+# 16. 契約情報もデータモデルに入れる
+
+ここは今回の企画の大きな特徴になります。
+
+```text
+Contract
+ │
+ ├── NDA
+ ├── Employment Agreement
+ ├── Project Agreement
+ ├── IP Agreement
+ ├── OSS License
+ └── Data Processing Agreement
+```
+
+そして、
+
+```text
+Skill
+ │
+ └── Evidence
+       │
+       └── Project
+             │
+             └── Contract
+```
+
+と関連付けます。
+
+これによって、
+
+> 「このSkillはどの契約に基づくプロジェクトで得られたものか？」
+
+を追跡できます。
+
+---
+
+# 17. さらに「有効期限」が重要
+
+NDAやプロジェクト契約は永遠とは限りません。
+
+例えば、
+
+```text
+Skill Evidence
+     │
+     ├── valid_from
+     ├── valid_until
+     ├── confidentiality_level
+     └── distribution_policy
+```
+
+とします。
+
+例えば、
+
+```text
+2026-04-01
+    │
+    ▼
+NDA Project
+    │
+    ▼
+Skill created
+    │
+    ▼
+2028-03-31 NDA expiration
+```
+
+となった場合、
+
+**自動的に公開可能になるとは限らない**
+
+ことにも注意します。
+
+契約終了＝秘密情報が自動的に公知になる、とは限らないからです。
+
+---
+
+# 18. 個人情報も別軸で管理する
+
+このアプリでは、
+
+```text
+Skill
+Experience
+Project
+User
+Employer
+Career
+```
+
+が全部つながります。
+
+これはかなり個人情報リスクが高い。
+
+個人情報保護委員会の現行ガイドラインでは、個人データについてアクセス制御、識別・認証、不正アクセス防止などの技術的安全管理措置が示されています。([PPC][3])
+
+したがって、
+
+```text
+Skill Visibility
+
+Private
+   ↓
+Recruiter Only
+   ↓
+Team
+   ↓
+Company
+   ↓
+Community
+   ↓
+Public
+```
+
+という**公開範囲**をSkill/Evidence単位で持たせたいです。
+
+---
+
+# 19. ここまでを統合したアーキテクチャ
+
+```plantuml
+@startuml
+title Skill & Experience Platform Architecture
+
+actor User
+actor Programmer
+actor "Company Admin" as Admin
+actor Recruiter
+
+package "Mobile / Web" {
+    component "User Mode" as UserMode
+    component "Programmer Mode" as ProgrammerMode
+    component "Career Profile" as Career
+}
+
+package "Game Platform" {
+    component "Game Engine" as Engine
+    component "Game Definition" as GameDef
+    component "Fork / Version Control" as Fork
+    component "Sandbox" as Sandbox
+    component "Distribution" as Distribution
+}
+
+package "Skill Platform" {
+    component "Activity" as Activity
+    component "Experience" as Experience
+    component "Evidence" as Evidence
+    component "Skill Assessment" as Assessment
+    component "Point / XP" as Point
+}
+
+package "Enterprise Confidential Zone" {
+    component "Project Workspace" as Project
+    component "NDA Policy" as NDA
+    component "Confidential Evidence" as Confidential
+    component "Human Review" as Review
+    component "Abstraction Engine" as Abstractor
+}
+
+package "Skill Exchange Zone" {
+    component "Abstract Skill" as AbstractSkill
+    component "Provenance" as Provenance
+    component "Distribution Policy" as Policy
+}
+
+database "User / Skill DB" as DB
+database "Confidential DB" as CDB
+
+User --> UserMode
+Programmer --> ProgrammerMode
+Admin --> Project
+Recruiter --> Career
+
+UserMode --> Engine
+ProgrammerMode --> GameDef
+GameDef --> Sandbox
+Sandbox --> Engine
+ProgrammerMode --> Fork
+Fork --> Distribution
+Distribution --> UserMode
+
+Engine --> Activity
+Activity --> Experience
+Experience --> Evidence
+
+Evidence --> Assessment
+Assessment --> Point
+Assessment --> Career
+
+Project --> Confidential
+Confidential --> CDB
+NDA --> Confidential
+Confidential --> Review
+Review --> Abstractor
+Abstractor --> AbstractSkill
+
+AbstractSkill --> Provenance
+AbstractSkill --> Policy
+AbstractSkill --> Assessment
+
+Experience --> DB
+Evidence --> DB
+Assessment --> DB
+Point --> DB
+Career --> DB
+
+AbstractSkill --> DB
+
+@enduml
+```
+
+---
+
+# 20. そして、私は「3種類の信頼」を分けたい
+
+この企画では、これが非常に重要です。
+
+### ① 技術的Trust
+
+```text
+このプログラムは安全か？
+```
+
+### ② 経験的Trust
+
+```text
+この人は本当にこのSkillを持っているか？
+```
+
+### ③ 契約的Trust
+
+```text
+この情報を公開してよいのか？
+```
+
+この3つを混ぜない。
+
+```text
+                Trust
+                  │
+       ┌──────────┼──────────┐
+       ▼          ▼          ▼
+   Technical   Evidence    Contract
+     Trust       Trust       Trust
+       │          │           │
+    Sandbox    Skill証拠     NDA/IP
+    Security   実績確認      公開範囲
+```
+
+---
+
+# 21. HAZOPの観点でもかなり面白くなる
+
+以前の11 Guide Wordsによる分析を、この新機能にも適用できます。
+
+例えば、
+
+| Guide Word | プログラム共有      | NDAスキル共有     |
+| ---------- | ------------ | ------------ |
+| No         | プログラムが配布されない | Skillが登録されない |
+| More       | ポイント過剰付与     | 情報を出し過ぎる     |
+| Less       | 機能不足         | 抽象化しすぎる      |
+| As well as | 悪意あるコード追加    | 秘密情報が追加される   |
+| Part of    | 一部コードだけ配布    | 一部だけ秘密情報     |
+| Reverse    | 改変で意図と逆動作    | Skillの意味が逆転  |
+| Other than | 別プログラム実行     | 別企業情報混入      |
+| Early      | 未検査コード配布     | NDA終了前公開     |
+| Late       | セキュリティ検査遅延   | 公開停止遅延       |
+| Before     | 認証前に配布       | 契約確認前に共有     |
+| After      | 公開後に問題発覚     | 契約終了後も公開     |
+
+特に怖いのが、
+
+> **「抽象化したから安全だと思っていたが、複数のSkillを組み合わせると元の企業やプロジェクトを推測できてしまう」**
+
+というケースです。
+
+これは今回の企画では、最初から**「再識別リスク」**として扱うべきだと思います。
+
+---
+
+# 22. したがって「企業向けモード」には4段階の承認を入れたい
+
+```text
+Project Data
+     │
+     ▼
+① Classification
+     │
+     ▼
+② Abstraction
+     │
+     ▼
+③ Security Review
+     │
+     ▼
+④ Contract / NDA Review
+     │
+     ▼
+⑤ Publish
+```
+
+そして、
+
+**①～④を通過しなければ⑤に進めない。**
+
+さらに重要なのは、**AIに自動判定させて終わりにしない**ことです。
+
+AIは、
+
+> 「この情報には企業名らしき情報があります」
+
+> 「このSkillの組み合わせから案件を推測できる可能性があります」
+
+という**レビュー支援**には使えます。
+
+しかし、
+
+> 「AIが安全と判定したから公開」
+
+にはしない。
+
+---
+
+# 23. 最終的には「Skill Passport」にできる
+
+ここまでやると、アプリの最終形がかなり見えてきます。
+
+```text
+┌────────────────────────────────┐
+│          Skill Passport        │
+├────────────────────────────────┤
+│                                │
+│ Python             Lv.8        │
+│ C/C++              Lv.7        │
+│ Software Design    Lv.6        │
+│ Security           Lv.5        │
+│                                │
+│ Projects             23        │
+│ Experiences          87        │
+│ Game Contributions   14        │
+│ Open Source           9        │
+│                                │
+│ Verified Evidence    62        │
+│                                │
+│ ───────────────────────────── │
+│                                │
+│ Confidential Experience:       │
+│  12 projects                   │
+│                                │
+│ Public Abstract Skills:        │
+│  34 skills                     │
+│                                │
+└────────────────────────────────┘
+```
+
+ここで**企業名・顧客名・秘密の技術内容は見せずに、「何ができる人なのか」を証明する**。
+
+これは転職市場だけでなく、
+
+* フリーランス
+* 社内異動
+* プロジェクトアサイン
+* 副業
+* OSS活動
+* 技術コミュニティ
+* 教育
+* リスキリング
+
+にも使えます。
+
+---
+
+## 特に重要な設計原則
+
+今回の2機能について、私は最初から次の**10個を制約**として置くことをおすすめします。
+
+1. **利用者モードとプログラマモードは権限的に分離する**
+2. **アップロードされたプログラムは信頼しない**
+3. **ゲーム実行環境とホストOSを分離する**
+4. **PointとSkillを別概念にする**
+5. **SkillにはEvidenceを紐付ける**
+6. **EvidenceにはProvenanceを持たせる**
+7. **NDA情報と公開Skillを物理的/論理的に分離する**
+8. **抽象化は自動公開ではなく、人間による承認を必要とする**
+9. **Skillごとに公開範囲・契約・有効期限を持たせる**
+10. **「匿名化したから安全」とはみなさず、組合せによる再識別を評価する**
+
+特に9について、個人データの安全管理はリスクに応じて設計するという現在の個人情報保護委員会の考え方とも整合します。([PPC][4])
+
+また、企業秘密については「秘密管理性・有用性・非公知性」が重要なので、**NDAを結んでいるだけで安全、あるいはNDA対象外なら自由に公開できる、と単純化しない**ほうがいいです。([経済産業省][2])
+
+---
+
+この企画は、ここまで来ると**「アプリ」だけでなく、かなり本格的なプラットフォーム設計**になっています。
+
+次に進めるなら、私は **①「利用者モード／プログラマモード」の状態遷移図、②「NDAプロジェクト→抽象Skill→公開」の状態遷移図、③「Skill/Evidence/Contract/Point/Game」のER図**の3枚をPlantUMLで作り、さらにそこへ**HAZOP 11 Guide Wordsを適用して制約を洗い出す**のが非常に良いと思います。
+
+[1]: https://www.ipa.go.jp/security/vuln/websecurity.html?utm_source=chatgpt.com "安全なウェブサイトの作り方 | 情報セキュリティ | IPA 独立行政法人 情報処理推進機構"
+[2]: https://www.meti.go.jp/policy/economy/chizai/chiteki/trade-secret.html?utm_source=chatgpt.com "営業秘密～営業秘密を守り活用する～ （METI/経済産業省）"
+[3]: https://www.ppc.go.jp/personalinfo/legal/guidelines_tsusoku/?utm_source=chatgpt.com "個人情報の保護に関する法律についてのガイドライン（通則編） ｜個人情報保護委員会"
+[4]: https://www.ppc.go.jp/personalinfo/legal/guidelines_tsusoku/?referral=tanocchi-bluereturn&utm_source=chatgpt.com "個人情報の保護に関する法律についてのガイドライン（通則編） ｜個人情報保護委員会"
+
+# Q5 さらに追加して、関連特許の検索と、従来にないアイデアであれば特許の申請書類を作成する。特許がむつかしそうであれば、論文検索し投稿論文案を作成する。さらに、仕様が役立ちそうであれば、規格検索し、国際規格案を作成するという３つの分岐をそろえたいです。
+A5
+
+はい。ここまで来ると、企画の中心を **「経験を記録するアプリ」から「経験を知財・論文・標準化まで発展させる知識循環プラットフォーム」** と捉え直すと、かなりきれいにまとまります。
+
+私は3つの分岐を、**特許・論文・標準化を競合させるのではなく、成熟度に応じて分岐する仕組み**にすることをおすすめします。
+
+## 1. 全体構想
+
+```text
+                         ┌──────────────────┐
+                         │  日々の活動・経験 │
+                         └────────┬─────────┘
+                                  ↓
+                         ┌──────────────────┐
+                         │ Skill / Evidence │
+                         └────────┬─────────┘
+                                  ↓
+                         ┌──────────────────┐
+                         │   新規性評価     │
+                         └────────┬─────────┘
+                                  ↓
+                  ┌───────────────┼───────────────┐
+                  │               │               │
+                  ↓               ↓               ↓
+             技術的発明       学術的知見       共通仕様
+                  │               │               │
+                  ↓               ↓               ↓
+              特許検索         論文検索         規格検索
+                  │               │               │
+                  ↓               ↓               ↓
+             特許候補？       論文候補？       規格候補？
+                  │               │               │
+                  ↓               ↓               ↓
+             特許出願案       投稿論文案       国際規格案
+```
+
+ただし、**AIが「特許になる」「特許にならない」と最終判断する設計にはしない**ほうがよいです。
+
+AIは、
+
+> 「関連文献・特許を調査して、新規性・進歩性・先行技術との関係を整理する」
+
+ところまで。
+
+最終的な出願判断は、本人・弁理士・知財部門などが行う、という役割分担にします。
+
+---
+
+# 2. 3つの分岐を詳しくする
+
+## A. 特許ルート
+
+### 「これは従来にない技術か？」
+
+を調べます。
+
+```text
+Experience
+   ↓
+Technical Idea
+   ↓
+Patent Search
+   ├── Google Patents
+   ├── J-PlatPat
+   ├── Espacenet
+   └── WIPO PATENTSCOPE
+   ↓
+Prior Art Analysis
+   ↓
+┌───────────────┐
+│ 新規性・進歩性 │
+│ の可能性       │
+└───────┬───────┘
+        ↓
+ Patent Candidate
+        ↓
+ Invention Disclosure
+        ↓
+ Patent Draft
+```
+
+ここで生成するのは、最初から正式な特許出願書ではなく、
+
+### 「発明提案書」
+
+にするのがよいでしょう。
+
+例えば、
+
+```text
+発明名称
+技術分野
+背景技術
+従来技術の問題
+発明の目的
+発明の構成
+作用・効果
+実施例
+変形例
+先行技術との差分
+請求項候補
+図面候補
+```
+
+まで生成する。
+
+その後、専門家が確認して正式な出願書類にします。
+
+---
+
+# 3. 「特許検索」を経験記録とつなぐ
+
+ここがこのアプリならではです。
+
+例えばプログラマが、
+
+> 「ゲームの利用実績からSkillを自動推定する方式」
+
+を考えたとします。
+
+すると、
+
+```text
+Project
+ ↓
+Experience
+ ↓
+New Idea
+ ↓
+Patent Search
+ ↓
+Related Patents
+```
+
+となります。
+
+さらに検索結果を、
+
+```text
+Idea
+ │
+ ├── Similar Patent A
+ ├── Similar Patent B
+ ├── Similar Paper C
+ └── Standard D
+```
+
+と関連付ける。
+
+これによって、**「自分のアイデアがどこから来て、何と違うのか」**を残せます。
+
+---
+
+# 4. B. 論文ルート
+
+特許としては弱いが、研究として面白い場合があります。
+
+```text
+Idea
+ ↓
+Patent Search
+ ↓
+「新規性・進歩性が弱い」
+ ↓
+Research Question
+ ↓
+Academic Literature Search
+ ↓
+Research Gap
+ ↓
+Experiment / Evaluation
+ ↓
+Paper Draft
+```
+
+ここでAIに、
+
+* 論文検索
+* 関連研究整理
+* Research Gap抽出
+* 仮説作成
+* 実験計画
+* 評価指標
+* 論文構成
+
+を支援させます。
+
+---
+
+# 5. 論文生成は「実験結果を捏造しない」が絶対条件
+
+ここは非常に重要です。
+
+AIが、
+
+> 「実験したところ精度が95%になった」
+
+などと勝手に書くのはNG。
+
+したがってデータモデルを、
+
+```text
+Research
+ │
+ ├── Hypothesis
+ ├── Method
+ ├── Dataset
+ ├── Experiment
+ ├── Result
+ └── Conclusion
+```
+
+と分け、
+
+**Resultは実際の測定値からしか生成できない**
+
+ようにします。
+
+論文案は、
+
+```text
+Abstract
+Introduction
+Related Work
+Method
+Experiment
+Results
+Discussion
+Conclusion
+References
+```
+
+まで作れるようにします。
+
+---
+
+# 6. C. 国際規格ルート
+
+これは今回の企画では、実はかなり面白いです。
+
+例えば、
+
+> 「Skillの表現方法を企業間で共通化できるのではないか？」
+
+というアイデアが出たとします。
+
+すると、
+
+```text
+Specification
+ ↓
+Standards Search
+ ↓
+ISO
+IEC
+IEEE
+IETF
+W3C
+ETSI
+AUTOSAR
+etc.
+ ↓
+Gap Analysis
+ ↓
+Existing Standard?
+ ↓
+New Work Item?
+ ↓
+International Standard Proposal
+```
+
+となります。
+
+---
+
+# 7. 規格化候補の例
+
+今回のアプリなら、例えば、
+
+### Skill Evidence Format
+
+```json
+{
+  "skill": "python",
+  "level": 4,
+  "evidence": [
+    {
+      "type": "project",
+      "duration": "6 months"
+    }
+  ]
+}
+```
+
+というデータ形式を考えられます。
+
+これを、
+
+> **「技術者の経験・Skill・Evidenceを相互運用可能な形式で表現する仕様」**
+
+として標準化する。
+
+これは単なるアプリ機能ではなく、**将来的には標準仕様候補**になり得ます。
+
+---
+
+# 8. さらに面白いのが「3分岐」ではなく「3段階」
+
+私はここを、
+
+```text
+             Idea
+               │
+               ▼
+          Prior Art Search
+               │
+       ┌───────┼────────┐
+       │       │        │
+       ▼       ▼        ▼
+     Patent   Paper   Standard
+       │       │        │
+       └───────┼────────┘
+               ▼
+            Knowledge
+```
+
+だけにするより、
+
+### 「どの社会的成果に向いているか」
+
+を判定する仕組みにします。
+
+---
+
+# 9. 例えばこんな判定
+
+| 特徴       | 特許 | 論文 | 規格 |
+| -------- | -: | -: | -: |
+| 技術的な新規性  |  ◎ |  ○ |  ○ |
+| 実装方法が重要  |  ◎ |  ○ |  △ |
+| 理論・評価が重要 |  △ |  ◎ |  △ |
+| 実験結果が重要  |  △ |  ◎ |  ○ |
+| 複数企業が使う  |  ○ |  ○ |  ◎ |
+| 相互運用性が重要 |  △ |  ○ |  ◎ |
+| 独占したい    |  ◎ |  × |  × |
+| 広く普及させたい |  ○ |  ○ |  ◎ |
+
+例えば、
+
+> **新しいアルゴリズム**
+
+なら、
+
+**特許 → 論文**
+
+の順。
+
+> **複数企業でSkill情報を交換するデータ形式**
+
+なら、
+
+**論文 → 規格**
+
+の順。
+
+> **既存技術を組み合わせた新しい業務方法**
+
+なら、
+
+**特許 → 論文**
+
+を検討。
+
+---
+
+# 10. さらに「特許→論文→規格」の連鎖も許す
+
+ここが一番面白いところです。
+
+```text
+                 Idea
+                  │
+                  ▼
+             Patent Search
+                  │
+                  ▼
+             Patent Draft
+                  │
+                  │
+                  ▼
+              Research
+                  │
+                  ▼
+             Academic Paper
+                  │
+                  │
+                  ▼
+             Specification
+                  │
+                  ▼
+           International
+             Standard
+```
+
+例えば、
+
+**① 発明**
+
+「Skill Evidenceからスキルを推定するアルゴリズム」
+
+↓
+
+**② 特許**
+
+アルゴリズムの新規部分を出願
+
+↓
+
+**③ 論文**
+
+実験結果を論文化
+
+↓
+
+**④ 標準化**
+
+Skill Evidenceを交換するデータモデルを標準化
+
+という流れです。
+
+---
+
+# 11. 逆方向も重要
+
+実は、
+
+```text
+Standard
+   ↓
+Implementation
+   ↓
+Experience
+   ↓
+Improvement
+   ↓
+Patent
+```
+
+もあります。
+
+例えばISO/IEC規格を実装してみたら、
+
+> 「既存規格ではこの部分が扱えない」
+
+と分かる。
+
+↓
+
+改善案を作る。
+
+↓
+
+特許になる可能性を調べる。
+
+↓
+
+論文を書く。
+
+↓
+
+規格改訂提案をする。
+
+これは**技術者の実務経験から標準化までつながる非常に良い循環**です。
+
+---
+
+# 12. これまでの企画を全部統合すると
+
+かなり大きなシステムになります。
+
+```text
+                         ┌─────────────┐
+                         │    User     │
+                         └──────┬──────┘
+                                │
+                ┌───────────────┴───────────────┐
+                │                               │
+                ▼                               ▼
+          User Mode                       Programmer Mode
+                │                               │
+                ▼                               ▼
+             Game                         Game Development
+                │                               │
+                └───────────────┬───────────────┘
+                                ▼
+                            Activity
+                                │
+                                ▼
+                           Experience
+                                │
+                                ▼
+                             Evidence
+                                │
+                         ┌──────┴──────┐
+                         ▼             ▼
+                       Skill        New Idea
+                         │             │
+                         ▼             ▼
+                       Point      Prior Art Search
+                         │             │
+                         │       ┌─────┼─────┐
+                         │       ▼     ▼     ▼
+                         │    Patent Paper Standard
+                         │       │     │     │
+                         │       ▼     ▼     ▼
+                         │    Draft  Draft  Draft
+                         │
+                         ▼
+                    Career Profile
+```
+
+そして企業プロジェクトは横から入ります。
+
+```text
+                  Enterprise Project
+                         │
+                    NDA / Contract
+                         │
+                         ▼
+                 Confidential Evidence
+                         │
+                    Human Review
+                         │
+                    Abstraction
+                         │
+                         ▼
+                  Abstract Skill
+                         │
+                         ▼
+                      Skill
+```
+
+---
+
+# 13. このシステムの「知識の流れ」
+
+私は最終的には、これを**Knowledge Lifecycle**として設計したいです。
+
+```text
+        ┌────────── Experience ──────────┐
+        │                                │
+        ▼                                │
+      Skill                              │
+        │                                │
+        ▼                                │
+      Idea                               │
+        │                                │
+        ▼                                │
+    Prior Art                            │
+        │                                │
+   ┌────┼────┐                           │
+   ▼    ▼    ▼                           │
+Patent Paper Standard                    │
+   │    │    │                           │
+   └────┼────┘                           │
+        ▼                                │
+    Knowledge                            │
+        │                                │
+        ▼                                │
+   New Experience ───────────────────────┘
+```
+
+つまり、
+
+> **経験 → 知識 → 発明・研究・標準化 → 新しい経験**
+
+という循環です。
+
+これができると、単なるSNSではなくなります。
+
+---
+
+# 14. セキュリティ・契約面では「4つの境界」を置きたい
+
+今回の追加機能を考えると、最低でも、
+
+```text
+┌─────────────────────────────────┐
+│ Public                           │
+│                                   │
+│ 公開Skill / OSS / 論文 / 規格     │
+└────────────────┬────────────────┘
+                 │
+┌────────────────▼────────────────┐
+│ Community                        │
+│                                   │
+│ ゲーム / プログラム / コラボ      │
+└────────────────┬────────────────┘
+                 │
+┌────────────────▼────────────────┐
+│ Career                           │
+│                                   │
+│ 個人経験 / Skill / Evidence       │
+└────────────────┬────────────────┘
+                 │
+┌────────────────▼────────────────┐
+│ Confidential                     │
+│                                   │
+│ NDA / 企業秘密 / 顧客情報         │
+└─────────────────────────────────┘
+```
+
+さらに、
+
+**Patent Candidate**
+
+**Paper Candidate**
+
+**Standard Candidate**
+
+は、それぞれ別のワークスペースにしたほうがいいでしょう。
+
+特に**特許については公開前に出願可能性を検討する必要がある**ため、論文・GitHub・ゲーム配布などによる先行公開との関係を管理できるようにします。
+
+---
+
+## 15. 最終的なアプリのコンセプト
+
+ここまでのアイデアを一言でまとめるなら、
+
+> **「遊びながら経験を積み、その経験をスキルとして証明し、新しいアイデアを特許・論文・標準へ育てるプラットフォーム」**
+
+です。
+
+そして企業利用では、
+
+> **「機密を守りながら、個人が得た抽象的なスキルだけをキャリア資産として持ち出せる」**
+
+という価値になります。
+
+これはかなり重要なポイントです。
+
+企業の秘密を持ち出すのではなく、
+
+```text
+企業で働いた
+     ↓
+企業固有情報 ───→ 企業に残る
+     │
+     ▼
+抽象化されたSkill
+     │
+     ▼
+本人のCareer Profile
+```
+
+という境界を明確にする。
+
+---
+
+### 次に作るべき設計資料
+
+この規模なら、次は文章より**モデル化**したほうがよいです。私は次の **6枚のPlantUML図**を作ることをおすすめします。
+
+1. **全体システムアーキテクチャ図**
+2. **利用者モード／プログラマモード状態遷移図**
+3. **NDA → 抽象Skill → 公開Skillの状態遷移図**
+4. **Idea → Patent / Paper / Standardの分岐状態遷移図**
+5. **Skill・Experience・Evidence・Contract・Patent・Paper・StandardのER図**
+6. **認証・認可・NDA・知財・公開範囲を含むセキュリティアーキテクチャ図**
+
+この6枚を作ると、これまで検討してきた**ゲーム、ポイント、スキル、転職、プログラマモード、NDA、特許、論文、国際規格**が一つのシステムモデルとしてつながります。
+
+# Q6 情報処理学会でIT分野のスキルの国際規格の審議委員をしていたことがあります。また、安全間連携のシステムで技術者のスキル管理をしていたことがあります。管理というよりは、個々の技術者のやる気を促すような雰囲気のアプリにしたいと思います。
+A6  
+
+それは、この企画の方向性をかなり明確にする重要な経験だと思います。
+
+特に、**「スキル管理システム」ではなく「技術者が自分から成長したくなるシステム」**にする、という軸がよいと思います。
+
+これまでの機能を、その観点から少し組み替えたほうがよさそうです。
+
+## 1. 「管理」から「冒険」へ
+
+従来のスキル管理は、
+
+```text
+会社
+ ↓
+スキルを定義
+ ↓
+技術者を評価
+ ↓
+不足スキルを発見
+ ↓
+教育
+```
+
+という**管理者中心**になりがちです。
+
+今回のアプリは逆に、
+
+```text
+技術者
+ ↓
+興味を持つ
+ ↓
+遊んでみる
+ ↓
+作ってみる
+ ↓
+他人に使ってもらう
+ ↓
+経験が残る
+ ↓
+Skillが育つ
+ ↓
+「次は何をやろう？」
+```
+
+という**技術者中心**にする。
+
+これはかなり大きな違いです。
+
+---
+
+# 2. 「Skill Level」を会社が決めない
+
+例えば、
+
+> Python Level 4
+
+という表示だけだと、どうしても人事評価っぽくなります。
+
+そこで、
+
+```text
+Python
+★★★★★
+```
+
+だけでなく、
+
+```text
+Python
+
+🎮 Quest        18
+🛠 Projects      7
+👥 Users        243
+💡 Ideas          3
+📄 Papers         1
+📜 Patents        1
+🌐 Standards      0
+🤝 Mentoring      5
+```
+
+とします。
+
+すると、
+
+> 「自分はPython Level 5になるために何をすればいい？」
+
+ではなく、
+
+> **「次は何に挑戦してみよう？」**
+
+になります。
+
+---
+
+# 3. 「評価」ではなく「発見」
+
+例えばAIが、
+
+> あなたのスキルは不足しています。
+
+と言うのは避ける。
+
+代わりに、
+
+> **最近、C++と安全設計の経験が増えています。
+> この2つを組み合わせると、こんなQuestがあります。**
+
+と提案する。
+
+さらに、
+
+> **あなたと似た経験を持つ人が、このQuestから特許アイデアを発展させています。**
+
+などと提示する。
+
+つまりAIを**評価者ではなく、次の挑戦を見つけてくれる伴走者**にする。
+
+---
+
+# 4. ポイントも「報酬」だけにしない
+
+ポイントを、
+
+```text
+順位
+ランキング
+↓
+上位者が偉い
+```
+
+にしてしまうと、競争型SNSになります。
+
+今回のコンセプトなら、
+
+```text
+Point
+ ↓
+新しいQuestが開く
+ ↓
+新しい世界が開く
+ ↓
+新しいSkillに挑戦できる
+```
+
+という**探索型**が合います。
+
+例えば、
+
+> 「あと80 XPで『特許探索Quest』がアンロックされます」
+
+などです。
+
+---
+
+# 5. 特許・論文・規格も「評価」ではなく「発見」
+
+先ほどの3分岐も、この思想でかなり変わります。
+
+```text
+                  あなたのIdea
+                       │
+                       ▼
+              「これ、面白い？」
+                       │
+          ┌────────────┼────────────┐
+          ▼            ▼            ▼
+       特許を探す     論文を探す     規格を探す
+          │            │            │
+          ▼            ▼            ▼
+      発明になる？   研究になる？   標準になる？
+          │            │            │
+          ▼            ▼            ▼
+      Patent Quest   Paper Quest   Standard Quest
+```
+
+ここで、
+
+**「特許にならなかった」＝失敗**
+
+にしない。
+
+例えば、
+
+> 「特許としては既存技術が見つかりました。でも、この組み合わせについて十分な評価研究はありません。」
+
+となれば、
+
+**Paper Questが出現する。**
+
+さらに、
+
+> 「複数の組織で共通利用できそうです。」
+
+なら、
+
+**Standard Questが出現する。**
+
+つまり、
+
+> **一つの挑戦が、次の挑戦を生み出す。**
+
+---
+
+# 6. これはゲームとの相性が非常に良い
+
+例えば利用者の画面に、
+
+```text
+┌──────────────────────────┐
+│       Today's Quest       │
+├──────────────────────────┤
+│                          │
+│ 🔧 ちょっと改良してみる   │
+│                          │
+│ あなたが最近作った        │
+│ Game #27を                │
+│ もう少し面白くしてみよう。 │
+│                          │
+│       [挑戦する]          │
+│                          │
+└──────────────────────────┘
+```
+
+と出る。
+
+完成すると、
+
+```text
+🎉 Quest Complete!
+
+Game Design      +12
+Programming      +8
+Creativity       +15
+
+New Quest unlocked!
+
+💡 「この仕組み、他にも使えない？」
+```
+
+となる。
+
+ここから、
+
+```text
+Idea
+ ↓
+Patent Search Quest
+```
+
+へ行ってもいい。
+
+---
+
+# 7. 「他人から使われる」が最大のモチベーション
+
+今回のプログラマモードは、ここで非常に効いてきます。
+
+自分が改良したゲームが、
+
+```text
+自分
+ ↓
+公開
+ ↓
+10人が利用
+ ↓
+100人が利用
+ ↓
+1,000人が利用
+```
+
+となる。
+
+そこで、
+
+> **「あなたの改良版は、1,243人に遊ばれました」**
+
+と表示する。
+
+これは単なるポイントより強い動機になります。
+
+さらに、
+
+> 「17人があなたのゲームからSkill Questを完了しました」
+
+と出れば、
+
+**自分の技術が他人の成長に役立った**
+
+ことが分かる。
+
+---
+
+# 8. 企業のNDAプロジェクトも同じ思想にする
+
+ここも「会社がスキルを吸い上げる」のではなく、
+
+```text
+企業プロジェクト
+      ↓
+自分が得た経験
+      ↓
+機密情報を除く
+      ↓
+抽象化されたSkill
+      ↓
+自分のSkill Passport
+```
+
+とする。
+
+すると技術者側から見ると、
+
+> **「会社の仕事をしたら、自分のキャリア資産も育っていく」**
+
+という感覚になります。
+
+これはかなり重要だと思います。
+
+もちろん企業側には、**何が外部に出るかを契約・ポリシー・承認で制御する仕組み**を用意する。
+
+---
+
+# 9. 「Skill Passport」も履歴書ではなく「冒険記録」にする
+
+例えば、
+
+```text
+Kiyoshi's Skill Journey
+
+2026
+│
+├─ 🎮 Game Development
+│
+├─ 🔧 Software Engineering
+│
+├─ 🛡 Safety Engineering
+│
+├─ 💡 3 Ideas
+│
+├─ 📄 1 Paper
+│
+├─ 📜 1 Patent Candidate
+│
+└─ 🌐 1 Standard Proposal
+```
+
+という表示。
+
+そして、
+
+> **「あなたは何を経験してきたか」**
+
+だけでなく、
+
+> **「次に何をやってみるか」**
+
+が中心になる。
+
+---
+
+# 10. そして、先生・先輩・同僚の役割も変わる
+
+「評価者」ではなく、
+
+**Quest Creator**
+
+にできます。
+
+例えばベテラン技術者が、
+
+> 「若い技術者に安全設計を体験してほしい」
+
+と思ったら、
+
+```text
+Quest Creator
+       ↓
+Safety Quest
+       ↓
+公開
+       ↓
+若手技術者
+       ↓
+Challenge
+       ↓
+Experience
+```
+
+となる。
+
+さらに優れたQuestを作った人自身にも、
+
+```text
+Mentoring Skill
+Education Skill
+Quest Design Skill
+```
+
+が蓄積される。
+
+**教えることもSkillになる**わけです。
+
+---
+
+## 11. この企画の中心概念を一言にすると
+
+私は、
+
+> ### **「技術者を管理するのではなく、技術者の好奇心を育てる」**
+
+が一番近いと思います。
+
+そして、そのために、
+
+```text
+       好奇心
+         ↓
+       Quest
+         ↓
+       行動
+         ↓
+      Experience
+         ↓
+        Skill
+         ↓
+      「もっとやりたい」
+         ↓
+        Idea
+      ↙   ↓    ↘
+   Patent Paper Standard
+      ↘   ↓    ↙
+       社会への貢献
+         ↓
+     新しいQuest
+```
+
+という**正の循環**を作る。
+
+これは、これまでお話ししてきたゲーム、プログラマモード、ポイント、Skill、転職記録、NDA下の経験、特許・論文・国際規格という機能を、かなり自然に一つへまとめられると思います。
+
+そして、情報処理学会でITスキルの国際規格を審議された経験と、安全関連システムで技術者のスキルを扱われた経験を考えると、単なる「ゲーミフィケーション」ではなく、**スキルの定義・Evidence・相互運用性・標準化まで含めて設計できる**のが、この企画の大きな強みになりそうです。
+
+
