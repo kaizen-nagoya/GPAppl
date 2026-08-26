@@ -1049,5 +1049,81 @@ Copy-Item .\config.docker-template.php C:\work\GPAppl\moodle\config.php
 [3]: https://github.com/moodlehq/moodle-docker/issues/192?utm_source=chatgpt.com "Windows PowerShell Quick Start · Issue #192 · moodlehq/moodle-docker · GitHub"
 
 
+# 作業
+```shell
+> ls bin
+
+
+    ディレクトリ: C:\Users\kunren\gpappl\moodle-docker\bin
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----        2026/08/26     13:58           7857 moodle-docker-compose
+-a----        2026/08/26     13:58           6340 moodle-docker-compose.cmd
+-a----        2026/08/26     13:58            626 moodle-docker-wait-for-app
+-a----        2026/08/26     13:58            649 moodle-docker-wait-for-db
+
+PS C:\Users\kunren\gpappl\moodle-docker> .\bin\moodle-docker-compose.cmd up -d
+Error: MOODLE_DOCKER_DB is not set
+PS C:\Users\kunren\gpappl\moodle-docker> $Env:MOODLE_DOCKER_WWWROOT="C:\Users\kunren\gpappl\moofle"
+PS C:\Users\kunren\gpappl\moodle-docker> $Env:MOODLE_DOCKER_DB="pgsql"
+PS C:\Users\kunren\gpappl\moodle-docker> $Env:MOODLE_DOCKER_WEB_PORT="8000"
+PS C:\Users\kunren\gpappl\moodle-docker> $Env:MOODLE_DOCKER_WEB_PORT
+8000
+PS C:\Users\kunren\gpappl\moodle-docker> $Env:MOODLE_DOCKER_DB
+pgsql
+PS C:\Users\kunren\gpappl\moodle-docker> $Env:MOODLE_DOCKER_WWWROOT
+C:\Users\kunren\gpappl\moofle
+PS C:\Users\kunren\gpappl\moodle-docker> Copy-Item .\config.docker-template.php C:\Users\kunren\gpappl\moodle\config.php
+
+PS C:\Users\kunren\gpappl\moodle-docker> Text-Path C:\Users\kunren\gpappl\moodle\config.php
+Text-Path : 用語 'Text-Path' は、コマンドレット、関数、スクリプト ファイル、または操作可能なプログラムの名前として認識
+されません。名前が正しく記述されていることを確認し、パスが含まれている場合はそのパスが正しいことを確認してから、再試行
+してください。
+発生場所 行:1 文字:1
++ Text-Path C:\Users\kunren\gpappl\moodle\config.php
++ ~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Text-Path:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+PS C:\Users\kunren\gpappl\moodle-docker> Test-Path C:\Users\kunren\gpappl\moodle\config.php
+True
+PS C:\Users\kunren\gpappl\moodle-docker> .\bin\moodle-docker-compose.cmd up -d
+Error: MOODLE_DOCKER_WWWROOT is not set or not an existing directory
+PS C:\Users\kunren\gpappl\moodle-docker> $Env:MOODLE_DOCKER_WWWROOT="C:\Users\kunren\gpappl\moodle"
+PS C:\Users\kunren\gpappl\moodle-docker> .\bin\moodle-docker-compose.cmd up -d
+[+] up 112/112
+ ✔ Image selenium/standalone-firefox:4  Pulled                                                                    240.5s
+ ✔ Image axllent/mailpit:v1.10          Pulled                                                                    28.8ss
+ ✔ Image postgres:17                    Pulled                                                                    130.6s
+ ✔ Image moodlehq/moodle-php-apache:8.3 Pulled                                                                    186.3s
+ ✔ Image moodlehq/moodle-exttests       Pulled                                                                    126.5s
+ ✔ Network moodle-docker_default        Created                                                                   0.1s
+ ✔ Container moodle-docker-selenium-1   Started                                                                   2.3s
+ ✔ Container moodle-docker-exttests-1   Started                                                                   2.3s
+ ✔ Container moodle-docker-mailpit-1    Started                                                                   2.2s
+ ✔ Container moodle-docker-db-1         Started                                                                   2.2s
+ ✔ Container moodle-docker-webserver-1  Started                                                                   1.5s
+
 
 ```
+z Web
+localhost:80000
+```
+Installation
+Moodle - Modular Object-Oriented Dynamic Learning Environment
+Copyright notice
+Copyright (C) 1999 onwards Martin Dougiamas (https://moodle.com)
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+See the Moodle License information page for full details: https://moodledev.io/general/license
+
+Confirm
+Have you read these conditions and understood them?
+```
+
+# Q3 http::/localhost:8000 で画面がでます。Confirmボタンを押しても画面が切り替わりません。どうしたらいいですか。
