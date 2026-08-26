@@ -768,6 +768,286 @@ C:\Users\kunren\gpappl\moodle
 > docker compose up -d
 no configuration file provided: not found
 
+# Q3 上記操作 docker compose up -d で no configuration file provided: not found というエラーがでました。どうすればいいですか。
+A3
+
+はい。このエラーは、**前回私が案内した `docker compose up -d` が、Moodle公式の `moodle-docker` の使い方として適切ではありませんでした。** すみません。
+
+Moodle公式の `moodlehq/moodle-docker` は、通常の `docker compose up -d` ではなく、**`bin/moodle-docker-compose up -d`** を使います。公式READMEにもこの手順が記載されています。([GitHub][1])
+
+## まず、現在の場所を確認してください
+
+PowerShellで、
+
+```powershell
+pwd
+```
+
+次に、
+
+```powershell
+dir
+```
+
+を実行してください。
+
+おそらく、
+
+```text
+C:\work\GPAppl\moodle-docker
+```
+
+にいると思います。
+
+さらに、
+
+```powershell
+dir bin
+```
+
+として、`moodle-docker-compose.cmd` が見えることを確認してください。Windows用の `.cmd` が公式リポジトリに用意されています。([GitHub][2])
+
+---
+
+# 1. PowerShellで環境変数を設定
+
+今回の構成なら、まず次の3つを設定します。
+
+```powershell
+$Env:MOODLE_DOCKER_WWWROOT="C:\work\GPAppl\moodle"
+$Env:MOODLE_DOCKER_DB="pgsql"
+$Env:MOODLE_DOCKER_WEB_PORT="8000"
+```
+
+確認します。
+
+```powershell
+$Env:MOODLE_DOCKER_WWWROOT
+$Env:MOODLE_DOCKER_DB
+$Env:MOODLE_DOCKER_WEB_PORT
+```
+
+それぞれ、
+
+```text
+C:\work\GPAppl\moodle
+pgsql
+8000
+```
+
+となればOKです。
+
+PowerShellではLinux/bashの
+
+```bash
+export MOODLE_DOCKER_DB=pgsql
+```
+
+ではなく、
+
+```powershell
+$Env:MOODLE_DOCKER_DB="pgsql"
+```
+
+という書き方になる点がポイントです。Moodle公式リポジトリでも、Windows PowerShellではこの形式を使う必要があることが確認できます。([GitHub][3])
+
+---
+
+# 2. config.phpを作る
+
+ここも重要です。
+
+現在、
+
+```powershell
+cd C:\work\GPAppl\moodle-docker
+```
+
+にいることを確認して、
+
+```powershell
+Copy-Item .\config.docker-template.php C:\work\GPAppl\moodle\config.php
+```
+
+を実行します。
+
+確認：
+
+```powershell
+Test-Path C:\work\GPAppl\moodle\config.php
+```
+
+```text
+True
+```
+
+となればOKです。
+
+公式のQuick Startでも、`config.docker-template.php` をMoodle側の `config.php` にコピーしてからコンテナを起動する手順になっています。([GitHub][1])
+
+---
+
+# 3. ここで起動します
+
+これが今回の重要ポイントです。
+
+```powershell
+.\bin\moodle-docker-compose.cmd up -d
+```
+
+または、PowerShellのPATHの設定によっては、
+
+```powershell
+.\bin\moodle-docker-compose.cmd up -d
+```
+
+と明示的に `.cmd` を指定するのが確実です。
+
+公式のWindows用スクリプトは内部で複数のComposeファイルを組み合わせてDocker Composeを実行する仕組みになっています。([GitHub][2])
+
+---
+
+# 4. 起動確認
+
+```powershell
+.\bin\moodle-docker-compose.cmd ps
+```
+
+あるいは、
+
+```powershell
+docker ps
+```
+
+を実行します。
+
+複数のコンテナが表示されれば成功です。
+
+---
+
+# 5. ブラウザで確認
+
+Moodle DockerのデフォルトWebポートは8000です。公式READMEでも `MOODLE_DOCKER_WEB_PORT` のデフォルトが8000とされています。([GitHub][1])
+
+したがってブラウザで、
+
+[http://localhost:8000](http://localhost:8000?utm_source=chatgpt.com)
+
+を開いてください。
+
+Moodleの画面が表示されれば、開発環境の第一段階は成功です。
+
+---
+
+# 6. もし `config.php` が既にある場合
+
+もし、
+
+```powershell
+Test-Path C:\work\GPAppl\moodle\config.php
+```
+
+が
+
+```text
+True
+```
+
+なら、**上書きしなくても構いません。**
+
+その場合は、
+
+```powershell
+.\bin\moodle-docker-compose.cmd up -d
+```
+
+に進んでください。
+
+---
+
+# 7. 今回のエラーの原因
+
+今回の
+
+```text
+no configuration file provided: not found
+```
+
+は、Docker Composeが、
+
+> 「このディレクトリに `compose.yaml` / `docker-compose.yml` などのCompose設定ファイルがありません」
+
+と言っているものです。
+
+つまり、
+
+```powershell
+docker compose up -d
+```
+
+を直接実行したためです。
+
+今回cloneした
+
+```text
+moodle-docker
+```
+
+は、
+
+```text
+docker compose up
+```
+
+を直接実行する単純なComposeプロジェクトではなく、
+
+```text
+bin/moodle-docker-compose.cmd
+        │
+        ├── base.yml
+        ├── service.mail.yml
+        ├── db.pgsql.yml
+        ├── webserver.port.yml
+        └── その他
+              ↓
+        docker compose
+```
+
+という構成になっています。公式Windows用スクリプトがこれらを組み合わせて起動します。([GitHub][2])
+
+---
+
+## まず、ここまでを一気に実行してください
+
+PowerShellで次の順番です。
+
+```powershell
+cd C:\work\GPAppl\moodle-docker
+
+$Env:MOODLE_DOCKER_WWWROOT="C:\work\GPAppl\moodle"
+$Env:MOODLE_DOCKER_DB="pgsql"
+$Env:MOODLE_DOCKER_WEB_PORT="8000"
+
+Copy-Item .\config.docker-template.php C:\work\GPAppl\moodle\config.php
+
+.\bin\moodle-docker-compose.cmd up -d
+```
+
+その後、
+
+```powershell
+.\bin\moodle-docker-compose.cmd ps
+```
+
+です。
+
+**ここで別のエラーが出たら、そのエラーをそのまま貼ってください。**
+次は、推測で進めずに、現在の `moodle-docker` の状態に合わせて一つずつ確認しましょう。今回のGPAppl卒業研究では、Docker環境そのものも再現可能な開発環境として記録しておくと、後の卒論・中間発表にも使いやすくなります。
+
+[1]: https://github.com/moodlehq/moodle-docker/blob/main/README.md?utm_source=chatgpt.com "moodle-docker/README.md at main · moodlehq/moodle-docker · GitHub"
+[2]: https://github.com/moodlehq/moodle-docker/blob/main/bin/moodle-docker-compose.cmd?utm_source=chatgpt.com "moodle-docker/bin/moodle-docker-compose.cmd at main · moodlehq/moodle-docker · GitHub"
+[3]: https://github.com/moodlehq/moodle-docker/issues/192?utm_source=chatgpt.com "Windows PowerShell Quick Start · Issue #192 · moodlehq/moodle-docker · GitHub"
+
 
 
 ```
