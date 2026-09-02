@@ -1126,4 +1126,199 @@ Confirm
 Have you read these conditions and understood them?
 ```
 
+
+# 作業記録
+PS C:\Users\kunren\gpappl> $env:MOODLE_DOCKER_WWWROOT="C:\Users\kunren\gpappl\moodle"
+
+PS C:\Users\kunren\gpappl>  $env:MOODLE_DOCKER_WWWROOT
+C:\Users\kunren\gpappl\moodle
+
+PS C:\Users\kunren\gpappl> docker ps
+CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+
+PS C:\Users\kunren\gpappl> docker compose up -d
+docker : no configuration file provided: not found
+発生場所 行:1 文字:1
++ docker compose up -d
++ ~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (no configuratio...ided: not found 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+PS C:\Users\kunren\gpappl> $Env:MOODLE_DOCKER_WWWROOT="C:\work\GPAppl\moodle"
+
+PS C:\Users\kunren\gpappl> $Env:MOODLE_DOCKER_DB="pgsql"
+
+PS C:\Users\kunren\gpappl> $Env:MOODLE_DOCKER_WEB_PORT="8000"
+
+PS C:\Users\kunren\gpappl> $Env:MOODLE_DOCKER_DB="pgsql"
+
+PS C:\Users\kunren\gpappl> cd .\moodle-docker
+
+PS C:\Users\kunren\gpappl\moodle-docker> Test-Path C:\work\GPAppl\moodle\config.php
+False
+
+PS C:\Users\kunren\gpappl\moodle-docker> Test-Path C:\Users\kunren\GPAppl\moodle\config.php
+True
+
+PS C:\Users\kunren\gpappl\moodle-docker> .\bin\moodle-docker-compose.cmd up -d
+Error: MOODLE_DOCKER_WWWROOT is not set or not an existing directory
+
+PS C:\Users\kunren\gpappl\moodle-docker> .\bin\moodle-docker-compose.cmd up -d
+Error: MOODLE_DOCKER_WWWROOT is not set or not an existing directory
+
+PS C:\Users\kunren\gpappl\moodle-docker>  $Env:MOODLE_DOCKER_WWWROOT="C:\Users\kunren\GPAppl\moodle
+文字列に終端記号 " がありません。
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordEx 
+   ception
+    + FullyQualifiedErrorId : TerminatorExpectedAtEndOfString
+ 
+
+PS C:\Users\kunren\gpappl\moodle-docker>  $Env:MOODLE_DOCKER_WWWROOT="C:\Users\kunren\GPAppl\moodle"
+
+PS C:\Users\kunren\gpappl\moodle-docker> .\bin\moodle-docker-compose.cmd up -d
+.\bin\moodle-docker-compose.cmd :  Container moodle-docker-selenium-1 Recreate 
+発生場所 行:1 文字:1
++ .\bin\moodle-docker-compose.cmd up -d
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ( Container mood...ium-1 Recreate  
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ Container moodle-docker-webserver-1 Recreate 
+ Container moodle-docker-selenium-1 Recreated 
+ Container moodle-docker-webserver-1 Recreated 
+ Container moodle-docker-mailpit-1 Starting 
+ Container moodle-docker-db-1 Starting 
+ Container moodle-docker-exttests-1 Starting 
+ Container moodle-docker-selenium-1 Starting 
+ Container moodle-docker-mailpit-1 Started 
+ Container moodle-docker-db-1 Started 
+ Container moodle-docker-webserver-1 Starting 
+ Container moodle-docker-selenium-1 Started 
+ Container moodle-docker-exttests-1 Started 
+ Container moodle-docker-webserver-1 Started 
+
+PS C:\Users\kunren\gpappl\moodle-docker> docker ps
+CONTAINER ID   IMAGE                            COMMAND                   CREATE
+D          STATUS                             PORTS                             
+  NAMES
+ba8aefd2ed63   moodlehq/moodle-php-apache:8.3   "moodle-docker-php-e窶ｦ"   14 sec
+onds ago   Up 11 seconds                      127.0.0.1:8000->80/tcp            
+  moodle-docker-webserver-1
+8137b3fd1e33   selenium/standalone-firefox:4    "/opt/bin/entry_poin窶ｦ"   14 sec
+onds ago   Up 12 seconds                      4442-4444/tcp, 5900/tcp, 9000/tcp 
+  moodle-docker-selenium-1
+ca52bd2232a1   moodlehq/moodle-exttests         "docker-php-entrypoi窶ｦ"   6 days
+ ago       Up 12 seconds (health: starting)   80/tcp                            
+  moodle-docker-exttests-1
+683286ec5eae   postgres:17                      "docker-entrypoint.s窶ｦ"   6 days
+ ago       Up 12 seconds                      5432/tcp                          
+  moodle-docker-db-1
+0de86d8cfaa8   axllent/mailpit:v1.10            "/mailpit"                6 days
+ ago       Up 12 seconds                      1025/tcp, 8025/tcp                
+  moodle-docker-mailpit-1
+
+PS C:\Users\kunren\gpappl\moodle-docker> 
 # Q3 http::/localhost:8000 で画面がでます。Confirmボタンを押しても画面が切り替わりません。どうしたらいいですか。
+A3
+
+はい。前回のMoodleの続きですね。
+
+`http://localhost:8000` で **Moodleの画面自体は表示されるが、Confirmボタンを押しても次に進まない**のであれば、DockerのWebサーバーそのものは動いている可能性が高いです。Moodle公式のDocker環境でも、通常 `localhost:8000` がWebポートです。([GitHub][1])
+
+まず、**コンテナを停止・削除せずに**原因を切り分けましょう。
+
+### 1. PowerShellでMoodleのログを確認
+
+Moodleを起動したディレクトリで、
+
+```powershell
+docker compose ps
+```
+
+を実行してください。
+
+続いて、
+
+```powershell
+docker compose logs --tail=100
+```
+
+を実行します。
+
+特に、
+
+```text
+ERROR
+Warning
+Exception
+PHP Fatal error
+Database
+MariaDB
+PostgreSQL
+```
+
+などがないか確認します。
+
+### 2. ブラウザ側の問題を切り分ける
+
+まず Edge/Chromeで、
+
+```text
+http://127.0.0.1:8000
+```
+
+を開いてください。
+
+`localhost` ではなく `127.0.0.1` にするのがポイントです。
+
+さらに、**Ctrl + F5** で強制リロードしてからConfirmを押してください。
+
+Moodle公式のDocker環境でも `localhost:8000` が標準設定ですが、ブラウザのCookieやセッションが問題になる場合があります。公式ドキュメントでも、ログイン状態がおかしい場合はMoodleサイトのCookieを削除することが案内されています。([GitHub][1])
+
+### 3. それでもConfirmが反応しない場合
+
+ここが重要です。
+
+**Confirmを押した瞬間に、ブラウザの開発者ツールでJavaScriptエラーが出ている可能性があります。**
+
+Edge/Chromeで、
+
+**F12 → Console**
+
+を開いてから、もう一度Confirmを押してください。
+
+例えば、
+
+```text
+Uncaught ...
+Failed to load ...
+404 ...
+500 ...
+```
+
+などが出れば、その内容で原因をかなり絞れます。
+
+---
+
+### まず私に見せてほしいもの
+
+一気に原因を特定するため、PowerShellで次の2つを実行して、結果をそのまま貼ってください。
+
+```powershell
+docker compose ps
+```
+
+と
+
+```powershell
+docker compose logs --tail=100
+```
+
+**Confirmボタンの画面のスクリーンショット**もあると、さらに早いです。
+
+前回「Dockerが5個起動している」とおっしゃっていたので、今回も `docker compose ps` の結果を見れば、**Moodle本体・DB・その他のコンテナのどこで止まっているのか**を順番に確認できます。
+
+[1]: https://github.com/moodlehq/moodle-docker/blob/main/README.md?utm_source=chatgpt.com "moodle-docker/README.md at main · moodlehq/moodle-docker · GitHub"
