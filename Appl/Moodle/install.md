@@ -1322,3 +1322,112 @@ docker compose logs --tail=100
 前回「Dockerが5個起動している」とおっしゃっていたので、今回も `docker compose ps` の結果を見れば、**Moodle本体・DB・その他のコンテナのどこで止まっているのか**を順番に確認できます。
 
 [1]: https://github.com/moodlehq/moodle-docker/blob/main/README.md?utm_source=chatgpt.com "moodle-docker/README.md at main · moodlehq/moodle-docker · GitHub"
+
+# Q7 PS C:\Users\kunren\gpappl\moodle-docker> docker compose ps
+docker : no configuration file provided: not found
+発生場所 行:1 文字:1
++ docker compose ps
++ ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (no configuratio...ided: not found 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+PS C:\Users\kunren\gpappl\moodle-docker> docker compose logs --tail=100
+docker : no configuration file provided: not found
+発生場所 行:1 文字:1
++ docker compose logs --tail=100
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (no configuratio...ided: not found 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+A7 
+
+なるほど、原因が分かりました。
+**現在のディレクトリ `C:\Users\kunren\gpappl\moodle-docker` に `compose.yaml` / `docker-compose.yml` がない**ため、
+
+> `no configuration file provided: not found`
+
+となっています。
+
+これは **Moodleのコンテナが停止したという意味ではありません**。`docker compose` が「どのCompose設定を使えばいいの？」と困っている状態です。
+
+### まず確認してください
+
+PowerShellで、現在の場所のファイルを表示します。
+
+```powershell
+dir
+```
+
+特に次のファイルがあるか確認してください。
+
+```text
+compose.yaml
+compose.yml
+docker-compose.yml
+docker-compose.yaml
+```
+
+### もしファイルがない場合
+
+前回Moodleを起動した場所と、今いる場所が違う可能性があります。
+
+まず、
+
+```powershell
+cd C:\Users\kunren\gpappl
+dir
+```
+
+を実行してください。
+
+さらに、
+
+```powershell
+Get-ChildItem -Path C:\Users\kunren\gpappl -Recurse -Include compose.yaml,compose.yml,docker-compose.yml,docker-compose.yaml
+```
+
+で、**MoodleのComposeファイルを探せます**。
+
+見つかった場合、例えば
+
+```text
+C:\Users\kunren\gpappl\moodle-docker\docker-compose.yml
+```
+
+なら、
+
+```powershell
+cd C:\Users\kunren\gpappl\moodle-docker
+docker compose ps
+```
+
+でOKです。
+
+---
+
+### もう一つ重要な確認
+
+Composeファイルが見つからなくても、**Dockerコンテナ自体は確認できます**。
+
+次を実行してください。
+
+```powershell
+docker ps
+```
+
+これは `docker compose ps` と違って、Composeファイルが現在のディレクトリになくても実行できます。
+
+前回「5つのコンテナが起動している」とのことでしたので、今回も
+
+```powershell
+docker ps
+```
+
+の結果をそのまま貼ってください。
+
+**次は `docker ps` の結果を見て、Moodleの8000番ポートを担当しているコンテナを特定しましょう。**
+その後、Confirmボタンが効かない原因をコンテナのログまで追えば、かなり高い確率で原因を特定できます。
+
